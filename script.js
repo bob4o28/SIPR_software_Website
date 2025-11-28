@@ -31,7 +31,7 @@ function toast(msg) { alert(msg); }
 // ВАЖНО: ключът е в config.js (видим в браузъра).
 // За реално приложение трябва бекенд proxy!
 const GROQ_API_KEY = window.__CONFIG__?.GROQ_API_KEY;
-const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "llama3-70b-8192";
+const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "llama3-8b-8192";
 
 // OpenAI-compatible Groq endpoint:
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
