@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// Groq Agent function for future use
+// Groq Agent function for future use (with backend proxy)  vdvv
 async function callGroqAgent(prompt) {
   const res = await fetch('/api/groq', {
     method: 'POST',
