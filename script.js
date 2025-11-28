@@ -158,4 +158,15 @@ document.addEventListener("DOMContentLoaded", () => {
       setLoading(generateBtn, false);
     }
   });
+
+  //calling groq Agent for future use
+  export async function callGroqAgent(prompt) {
+  const res = await fetch('/api/groq', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input: prompt })
+  });
+  if (!res.ok) throw new Error(`Proxy error ${res.status}`);
+  return res.json();
+  }
 });
