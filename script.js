@@ -1,6 +1,5 @@
-
 // -------- ИНИЦИАЛИЗАЦИЯ НА КАРТА --------
-const CENTER_RUSE = [43.8356, 25.9657]; // приблизителен център на Русе
+const CENTER_RUSE = [43.8356, 25.9657]; 
 let map, marker;
 
 function initMap() {
@@ -10,12 +9,12 @@ function initMap() {
     maxZoom: 19,
   }).addTo(map);
 
-  // Начален пин (център)
   marker = L.marker(CENTER_RUSE, { draggable: true }).addTo(map);
   marker.bindPopup("Преместете маркера на точната локация").openPopup();
 
   marker.on("moveend", () => showCoords(marker.getLatLng()));
 }
+
 function showCoords(latlng) {
   const { lat, lng } = latlng;
   document.getElementById("coords").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -28,28 +27,33 @@ function setLoading(el, loading = true) {
 }
 function toast(msg) { alert(msg); }
 
-// -------- OPENAI ИНТЕГРАЦИЯ --------
-// ВАЖНО: ключът е в config.js (видим в браузъра). За реално приложение – бекенд!
-const OPENAI_API_KEY = window.__CONFIG__?.OPENAI_API_KEY;
+// -------- GROQ ИНТЕГРАЦИЯ --------
+// ВАЖНО: ключът е в config.js (видим в браузъра).
+// За реално приложение трябва бекенд proxy!
+const GROQ_API_KEY = window.__CONFIG__?.GROQ_API_KEY;
+const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "llama3-70b-8192";
 
-async function callOpenAIChat(messages, model = "gpt-4o-mini") {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+// OpenAI-compatible Groq endpoint:
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+async function callGroqChat(messages) {
+  const res = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`
+      "Authorization": `Bearer ${GROQ_API_KEY}`
     },
     body: JSON.stringify({
-      model,
+      model: GROQ_MODEL,
       messages,
-      temperature: 0.2
+      temperature: 0.3
     })
   });
 
   const data = await res.json();
   if (!res.ok) {
-    console.error("OpenAI error:", data);
-    throw new Error(data.error?.message || "OpenAI API error");
+    console.error("Groq error:", data);
+    throw new Error(data.error?.message || "Groq API error");
   }
   return data.choices?.[0]?.message?.content?.trim() ?? "";
 }
@@ -58,8 +62,11 @@ async function callOpenAIChat(messages, model = "gpt-4o-mini") {
 async function classifyProblem(problemText) {
   const system = "Ти си класификатор. Върни САМО една от категориите: осветление, инфраструктура, транспорт, животни, хигиена, шум, други.";
   const user = `Класифицирай следния сигнал: "${problemText}". Избери само една категория от списъка.`;
-  const out = await callOpenAIChat([{ role: "system", content: system }, { role: "user", content: user }]);
-  // Нормализиране
+  const out = await callGroqChat([
+    { role: "system", content: system },
+    { role: "user", content: user }
+  ]);
+  
   const normalized = out.toLowerCase().replace(/\./g, "").trim();
   const allowed = ["осветление","инфраструктура","транспорт","животни","хигиена","шум","други"];
   return allowed.includes(normalized) ? normalized : "други";
@@ -72,12 +79,14 @@ async function generateMunicipalSignal(problemText, category, coordsText) {
 Категория: ${category}
 Локация: ${coordsText || "неуточнена"}
 Изисквания: посочи конкретен участък, очаквано действие, и добави финално благодарствено изречение.`;
-  return await callOpenAIChat([{ role: "system", content: system }, { role: "user", content: user }]);
+  
+  return await callGroqChat([
+    { role: "system", content: system },
+    { role: "user", content: user }
+  ]);
 }
 
 // -------- ГЕОКОДИРАНЕ (АДРЕС -> КООРДИНАТИ) --------
-// Използваме публичния Nominatim (OpenStreetMap). За хакатон е ОК.
-// В реален продукт — собствен геокодинг или кеш с rate-limit защита.
 async function geocodeAddress(address) {
   if (!address) throw new Error("Въведете адрес или квартал");
   const url = new URL("https://nominatim.openstreetmap.org/search");
@@ -89,10 +98,11 @@ async function geocodeAddress(address) {
     headers: { "Accept": "application/json", "User-Agent": "ai-safety-assistant-demo" }
   });
   const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0) throw new Error("Не е намерена локация. Преместете маркера ръчно.");
+  if (!Array.isArray(data) || data.length === 0)
+    throw new Error("Не е намерена локация. Преместете маркера ръчно.");
+
   const { lat, lon } = data[0];
-  const latNum = Number(lat), lonNum = Number(lon);
-  return [latNum, lonNum];
+  return [Number(lat), Number(lon)];
 }
 
 // -------- MAIN UI ЛОГИКА --------
@@ -136,12 +146,13 @@ document.addEventListener("DOMContentLoaded", () => {
       toast("Моля, опишете проблема.");
       return;
     }
-    if (!OPENAI_API_KEY || OPENAI_API_KEY.includes("PASTE_")) {
-      toast("Моля, сложете OpenAI API ключа си в config.js.");
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("PASTE_")) {
+      toast("Моля, сложете Groq API ключа си в config.js.");
       return;
     }
     try {
       setLoading(generateBtn, true);
+
       const category = await classifyProblem(problemText);
       document.getElementById("category").textContent = category;
 
@@ -151,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const signal = await generateMunicipalSignal(problemText, category, coordsText);
       document.getElementById("signal").textContent = signal;
+
     } catch (e) {
       console.error(e);
       toast("Възникна грешка при генерирането. Вижте конзолата (DevTools).");
@@ -158,10 +170,9 @@ document.addEventListener("DOMContentLoaded", () => {
       setLoading(generateBtn, false);
     }
   });
-
 });
 
-// Groq Agent function for future use (with backend proxy)  vdvv
+// Optional: backend proxy call (unchanged)
 async function callGroqAgent(prompt) {
   const res = await fetch('/api/groq', {
     method: 'POST',
