@@ -1,15 +1,73 @@
-{
-	"folders": [
-		{
-			"uri": "vscode-vfs://github/bob4o28/SIPR_software_Website"
-		},
-		{
-			"name": "SIPR_software_Website",
-			"path": "C:/Users/Lenovo/Downloads/SIPR_software_Website"
-		}
-	],
-	"settings": {
-		"liveServer.settings.multiRootWorkspaceName": "SIPR_software_Website",
-		"liveServer.settings.AdvanceCustomBrowserCmdLine": ""
-	}
-}
+
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Асистент за безопасност в Русе</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet CSS/JS за карта -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+</head>
+<body>
+  <header>
+    <h1>AI Асистент за безопасност в Русе 🛡️</h1>
+    <p class="subtitle">Опишете проблема, изберете локация, получете готов сигнал</p>
+  </header>
+
+  <main>
+    <!-- Форма -->
+    <section class="card">
+      <label for="problem">Опишете проблема (пример: „Тъмно е до училище X“):</label>
+      <textarea id="problem" placeholder="Опишете кратко и ясно..." rows="5"></textarea>
+
+      <div class="row">
+        <div class="col">
+          <label for="address">Адрес / квартал (по желание):</label>
+          <input id="address" type="text" placeholder="ж.к. Ялта, Русе или ул. Александровска 10"/>
+        </div>
+        <div class="col buttons">
+          <button id="geocodeBtn" class="secondary">Намери на картата</button>
+          <button id="useCenterBtn" class="secondary">Пин в центъра</button>
+        </div>
+      </div>
+
+      <div id="map" class="map"></div>
+
+      <div class="actions">
+        <button id="generateBtn" onclick="callGroqChat(problem)">Генерирай сигнал</button>
+      </div>
+    </section>
+
+    <!-- Резултат -->
+    <section class="card">
+      <h2>Резултат</h2>
+      <div class="result-row">
+        <div>
+          <h3>Категория</h3>
+          <p id="category">—</p>
+        </div>
+        <div>
+          <h3>Локация</h3>
+          <p id="coords">—</p>
+        </div>
+      </div>
+      <h3>„Готов сигнал“</h3>
+      <div id="signal" class="signal"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small>Демо за хакатон TBST 2025 • AI + Leaflet + OpenStreetMap</small>
+  </footer>
+
+  <!-- Конфигурация и логика -->
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
