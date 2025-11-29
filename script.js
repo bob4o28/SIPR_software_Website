@@ -1,13 +1,9 @@
 // -------- ИНИЦИАЛИЗАЦИЯ НА КАРТА --------
-
-
-// Center of Ruse (lat, lng for Leaflet)
 const CENTER_RUSE = [43.8356, 25.9657];
 let map, marker;
 
 // Initialize Leaflet map
 function initMap() {
-  // Ensure Leaflet is loaded
   if (!window.L) {
     console.error('Leaflet library not loaded');
     alert('Грешка: Картата не е заредена. Проверете интернет връзката.');
@@ -69,7 +65,6 @@ if (navigator.geolocation) {
     },
     (err) => {
       console.warn("Geolocation отказано или недостъпно:", err);
-      // fallback → оставяме центъра на Русе
     }
   );
 }
@@ -88,7 +83,6 @@ if (navigator.geolocation) {
   });
 }
 
-// Nominatim reverse geocoding (coords -> address)
 async function reverseGeocode(lat, lon) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
   const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -142,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Bootstrap the map on page load
 document.addEventListener('DOMContentLoaded', () => {
-  // Small delay to ensure DOM is fully rendered
   setTimeout(initMap, 100);
 });
 function setLoading(el, loading = true, loadingText = "Моля, изчакайте...") {
@@ -189,8 +182,6 @@ function showToast(message, type = "info") {
 
 
 // -------- GROQ ИНТЕГРАЦИЯ --------
-
-
 const GROQ_API_KEY = window.__CONFIG__?.GROQ_API_KEY;
 const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "openai/gpt-oss-120b";
 
@@ -332,7 +323,6 @@ async function reverseGeocodeCoordinates(lat, lon) {
 
 // -------- MAIN UI ЛОГИКА --------
 document.addEventListener("DOMContentLoaded", () => {
-  // Map is already initialized, get the marker coords
   const coords = marker?.getLatLng();
   if (coords) {
     document.getElementById('coordsDisplay').textContent = 
