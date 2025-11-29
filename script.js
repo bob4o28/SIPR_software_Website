@@ -72,7 +72,7 @@ function showToast(message, type = "info") {
 
 
 const GROQ_API_KEY = window.__CONFIG__?.GROQ_API_KEY;
-const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "llama-3.1-8b-instant";
+const GROQ_MODEL = window.__CONFIG__?.GROQ_MODEL || "openai/gpt-oss-120b";
 
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -93,7 +93,7 @@ async function callGroqChat(messages) {
     body: JSON.stringify({
       model: GROQ_MODEL,
       messages,
-      temperature: 0.3,
+      temperature: 0.5,
     }),
   });
 
@@ -115,7 +115,7 @@ async function callGroqChat(messages) {
 async function classifyProblem(problemText) {
   const system =
     "Ти си класификатор. Върни САМО една от категориите: осветление, инфраструктура, транспорт, животни, хигиена, шум, други.";
-  const user = `Класифицирай следния сигнал: "${problemText}". Избери само една категория от списъка.`;
+  const user = `Класифицирай следния сигнал: "${problemText}". Избери само една категория от списъка. Избери категорията на база по-дългосрочния ефект от събитието. Пример "паднало дърво", дългосрочния ефект е инфраструктура, а краткосрочние е шум`;
 
   const out = await callGroqChat([
     { role: "system", content: system },

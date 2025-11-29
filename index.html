@@ -12,6 +12,7 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&v=weekly"></script>
   
 </head>
 <body>
@@ -20,7 +21,7 @@
     <p class="subtitle">Опишете проблема, изберете локация, получете готов сигнал</p>
   </header>
 
-  <main>
+  <main class="app-main">
     <!-- Форма -->
     <section class="card">
       <label for="problem">Опишете проблема (пример: „Тъмно е до училище X“):</label>
@@ -32,15 +33,16 @@
           <input id="address" type="text" placeholder="ж.к. Ялта, Русе или ул. Александровска 10"/>
         </div>
         <div class="col buttons">
-          <button id="geocodeBtn" class="secondary">Намери на картата</button>
-          <button id="useCenterBtn" class="secondary">Пин в центъра</button>
+          <button id="geocodeBtn" class="btn btn-secondary">Намери на картата</button>
+          <button id="useCenterBtn" class="btn btn-secondary">Пин в центъра</button>
         </div>
       </div>
 
-      <div id="map" class="map"></div>
+      <!-- <div id="map" class="map"></div> -->
+       <iframe id="map" class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d23018.769997400996!2d25.93375179956207!3d43.84865154965614!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40ae60c8aa398e15%3A0x920c68b406f79c6b!2z0KDRg9GB0LUg0KbQtdC90YLRitGALCDQoNGD0YHQtQ!5e0!3m2!1sbg!2sbg!4v1764402275783!5m2!1sbg!2sbg" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 
       <div class="actions">
-        <button id="generateBtn" onclick="callGroqChat(problem)">Генерирай сигнал</button>
+        <button id="generateBtn" class="btn btn-primary" onclick="callGroqChat(problem)">Генерирай сигнал</button>
       </div>
     </section>
 
@@ -69,5 +71,29 @@
   <!-- Конфигурация и логика -->
   <script src="config.js"></script>
   <script src="script.js"></script>
+  <script>
+    let map, infoWindow;
+    function initMap() {
+      const center = { lat: 41.807933, lng: -72.249892 }; // Default center
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 16, center: center
+      });
+      infoWindow = new google.maps.InfoWindow({
+        content: 'Click the map to get coordinates!'
+      });
+      infoWindow.open(map, center);
+
+      // Listen for clicks
+      map.addListener('click', (event) => {
+        infoWindow.close();
+        infoWindow = new google.maps.InfoWindow({
+          position: event.latLng
+        });
+        infoWindow.setContent(JSON.stringify(event.latLng.toJSON(), null, 2));
+        infoWindow.open(map);
+        console.log('Coordinates:', event.latLng.lat(), event.latLng.lng()); // Access via console or use in your app
+      });
+    }
+  </script>
 </body>
 </html>
