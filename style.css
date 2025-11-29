@@ -69,7 +69,7 @@ body {
 }
 
 .subtitle {
-  margin: 0;
+  margin-left: 24px;
   color: var(--muted);
   font-size: 0.98rem;
 }
@@ -293,6 +293,7 @@ textarea {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
   box-shadow: 0 14px 30px rgba(37, 99, 235, 0.45);
+  margin-top:10px;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -304,6 +305,7 @@ textarea {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.7);
   color: var(--text);
+  margin-top:10px;
 }
 
 .btn-secondary:hover:not(:disabled) {

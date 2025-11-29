@@ -12,12 +12,11 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&v=weekly"></script>
   
 </head>
 <body>
   <header>
-    <h1>AI Асистент за безопасност в Русе 🛡️</h1>
+    <h1 style="margin-left: 24px;">System for Infrastructure Problem Report</h1>
     <p class="subtitle">Опишете проблема, изберете локация, получете готов сигнал</p>
   </header>
 
@@ -38,8 +37,7 @@
         </div>
       </div>
 
-      <!-- <div id="map" class="map"></div> -->
-       <iframe id="map" class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d23018.769997400996!2d25.93375179956207!3d43.84865154965614!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40ae60c8aa398e15%3A0x920c68b406f79c6b!2z0KDRg9GB0LUg0KbQtdC90YLRitGALCDQoNGD0YHQtQ!5e0!3m2!1sbg!2sbg!4v1764402275783!5m2!1sbg!2sbg" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div id="map" class="map"></div>
 
       <div class="actions">
         <button id="generateBtn" class="btn btn-primary" onclick="callGroqChat(problem)">Генерирай сигнал</button>

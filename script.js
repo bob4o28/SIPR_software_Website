@@ -153,8 +153,21 @@ async function generateMunicipalSignal(
     { role: "user", content: user },
   ]);
 }
+async function generateMunicipalSignalWithReverseGeo(problemText, category, lat, lon) {
+  // Взимаме адреса от координатите с Nominatim
+  let coordsText = "неуточнена";
+  try {
+    coordsText = await reverseGeocodeCoordinates(lat, lon);
+  } catch (err) {
+    console.warn("Обратното геокодиране не сработи, използва се неуточнена локация");
+  }
+
+  // Генерираме сигнала с получения адрес от обратното геокодиране
+  return await generateMunicipalSignal(problemText, category, coordsText);
+}
 
 // -------- ГЕОКОДИРАНЕ (АДРЕС -> КООРДИНАТИ) --------
+/*
 async function geocodeAddress(address) {
   if (!address) throw new Error("Въведете адрес или квартал");
   const url = new URL(
@@ -178,6 +191,31 @@ async function geocodeAddress(address) {
 
   const { lat, lon } = data[0];
   return [Number(lat), Number(lon)];
+}
+*/
+async function reverseGeocodeCoordinates(lat, lon) {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("lat", lat);
+  url.searchParams.set("lon", lon);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("zoom", "18"); // Ниво на детайлност - сграда/улица
+  url.searchParams.set("addressdetails", "1");
+
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "ai-safety-assistant-demo",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Грешка при връзка с Nominatim reverse geocoding API");
+  }
+
+  const data = await res.json();
+
+  // Връща човеко-разбираемия адрес или празен низ ако няма
+  return data.display_name || "";
 }
 
 // -------- MAIN UI ЛОГИКА --------
@@ -305,6 +343,29 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
+
+  // Изпращане по имейл (клиентска опция: отваря mail client / mailto)
+  const sendEmailBtn = document.getElementById("sendEmailBtn");
+  if (sendEmailBtn) sendEmailBtn.dataset.defaultText = "Изпрати по имейл";
+
+  sendEmailBtn?.addEventListener("click", async () => {
+    const signalEl = document.getElementById("signal");
+    const text = signalEl.textContent.trim();
+    if (!text) {
+      showToast("Няма текст за изпращане.", "error");
+      return;
+    }
+
+    // Бърза клиентска опция: отвори mail client с предварително попълнено тяло
+    const recipient = prompt("Въведете имейл получател", "example@gmail.com");
+    if (!recipient) return;
+    const subject = encodeURIComponent("Жалба/Сигнал до Община Русе");
+    const body = encodeURIComponent(text);
+    const mailto = `mailto:${recipient}?subject=${subject}&body=${body}`;
+
+    // Отваряме в нов прозорец/таб. Това ще работи с локален mail client или уебmail (Gmail will handle mailto links).
+    window.open(mailto);
+  });
 });
 
 // Optional: backend proxy call (unchanged)
@@ -315,5 +376,19 @@ async function callGroqAgent(prompt) {
     body: JSON.stringify({ input: prompt }),
   });
   if (!res.ok) throw new Error(`Proxy error ${res.status}`);
+  return res.json();
+}
+
+// Send email via backend endpoint `/api/send-email`.
+async function sendViaBackend(to, subject, text) {
+  const res = await fetch("/api/send-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to, subject, text }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Send failed: ${res.status}`);
+  }
   return res.json();
 }
