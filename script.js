@@ -49,7 +49,7 @@ function initMap() {
   });
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
+    async (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       const acc = pos.coords.accuracy;
@@ -59,7 +59,18 @@ if (navigator.geolocation) {
       // Преместваме картата и маркера
       map.setView(coords, 16);
       marker.setLatLng(coords);
-      showCoords(marker.getLatLng());
+      
+      // Update coordinates display
+      document.getElementById('coordsDisplay').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      
+      // Reverse-geocode to get address
+      try {
+        const address = await reverseGeocode(lat, lng);
+        document.getElementById('addressDisplay').textContent = address;
+      } catch (err) {
+        console.warn("Address lookup failed:", err);
+        document.getElementById('addressDisplay').textContent = "Адресът не е намерен";
+      }
  
       console.log(`Автоматично откриване: ${lat}, ${lng} (точност ${Math.round(acc)} м)`);
     },
