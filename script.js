@@ -51,7 +51,28 @@ function initMap() {
       document.getElementById('addressDisplay').textContent = "Адресът не е намерен";
     }
   });
-
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = pos.coords.accuracy;
+ 
+      const coords = [lat, lng];
+ 
+      // Преместваме картата и маркера
+      map.setView(coords, 16);
+      marker.setLatLng(coords);
+      showCoords(marker.getLatLng());
+ 
+      console.log(`Автоматично откриване: ${lat}, ${lng} (точност ${Math.round(acc)} м)`);
+    },
+    (err) => {
+      console.warn("Geolocation отказано или недостъпно:", err);
+      // fallback → оставяме центъра на Русе
+    }
+  );
+}
   // Optional: click map to move marker
   map.on('click', async (e) => {
     const { lat, lng } = e.latlng;
