@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Асистент за безопасност в Русе</title>
+  <title>SIPR</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Leaflet CSS/JS за карта -->
   <link
@@ -39,6 +39,11 @@
 
       <div id="map" class="map"></div>
 
+      <div class="info-display">
+        <p><strong>Координати:</strong> <span id="coordsDisplay">—</span></p>
+        <p><strong>Адрес:</strong> <span id="addressDisplay">—</span></p>
+      </div>
+
       <div class="actions">
         <button id="generateBtn" class="btn btn-primary" onclick="callGroqChat(problem)">Генерирай сигнал</button>
       </div>
@@ -69,29 +74,5 @@
   <!-- Конфигурация и логика -->
   <script src="config.js"></script>
   <script src="script.js"></script>
-  <script>
-    let map, infoWindow;
-    function initMap() {
-      const center = { lat: 41.807933, lng: -72.249892 }; // Default center
-      map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 16, center: center
-      });
-      infoWindow = new google.maps.InfoWindow({
-        content: 'Click the map to get coordinates!'
-      });
-      infoWindow.open(map, center);
-
-      // Listen for clicks
-      map.addListener('click', (event) => {
-        infoWindow.close();
-        infoWindow = new google.maps.InfoWindow({
-          position: event.latLng
-        });
-        infoWindow.setContent(JSON.stringify(event.latLng.toJSON(), null, 2));
-        infoWindow.open(map);
-        console.log('Coordinates:', event.latLng.lat(), event.latLng.lng()); // Access via console or use in your app
-      });
-    }
-  </script>
 </body>
 </html>

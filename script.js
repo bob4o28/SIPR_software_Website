@@ -1,30 +1,129 @@
 // -------- ИНИЦИАЛИЗАЦИЯ НА КАРТА --------
+
+
+// Center of Ruse (lat, lng for Leaflet)
 const CENTER_RUSE = [43.8356, 25.9657];
 let map, marker;
 
+// Initialize Leaflet map
 function initMap() {
-  map = L.map("map").setView(CENTER_RUSE, 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-    maxZoom: 19,
+  // Ensure Leaflet is loaded
+  if (!window.L) {
+    console.error('Leaflet library not loaded');
+    alert('Грешка: Картата не е заредена. Проверете интернет връзката.');
+    return;
+  }
+
+  // Ensure map container exists and has dimensions
+  const mapEl = document.getElementById('map');
+  if (!mapEl) {
+    console.error('Map container not found');
+    return;
+  }
+
+  map = L.map('map').setView(CENTER_RUSE, 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
   }).addTo(map);
+  
+  // Force map to recalculate size
+  map.invalidateSize();
 
   marker = L.marker(CENTER_RUSE, { draggable: true }).addTo(map);
-  marker
-    .bindPopup("Преместете маркера на точната локация")
-    .openPopup();
+  marker.bindPopup("Преместете маркера на точната локация").openPopup();
 
-  marker.on("moveend", () => showCoords(marker.getLatLng()));
+  // Show initial coords
+  document.getElementById('coordsDisplay').textContent =
+    `${CENTER_RUSE[0].toFixed(5)}, ${CENTER_RUSE[1].toFixed(5)}`;
+
+  // Reverse-geocode on drag end
+  marker.on('moveend', async () => {
+    const coords = marker.getLatLng();
+    document.getElementById('coordsDisplay').textContent =
+      `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+
+    try {
+      const address = await reverseGeocode(coords.lat, coords.lng);
+      document.getElementById('addressDisplay').textContent = address;
+    } catch {
+      document.getElementById('addressDisplay').textContent = "Адресът не е намерен";
+    }
+  });
+
+  // Optional: click map to move marker
+  map.on('click', async (e) => {
+    const { lat, lng } = e.latlng;
+    marker.setLatLng([lat, lng]);
+    document.getElementById('coordsDisplay').textContent =
+      `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    try {
+      const address = await reverseGeocode(lat, lng);
+      document.getElementById('addressDisplay').textContent = address;
+    } catch {
+      document.getElementById('addressDisplay').textContent = "Адресът не е намерен";
+    }
+  });
 }
 
-function showCoords(latlng) {
-  const { lat, lng } = latlng;
-  document.getElementById("coords").textContent = `${lat.toFixed(
-    5
-  )}, ${lng.toFixed(5)}`;
+// Nominatim reverse geocoding (coords -> address)
+async function reverseGeocode(lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error('Reverse geocoding failed');
+  const data = await res.json();
+  return data.display_name || "Адресът не е намерен";
 }
 
-// -------- ПОМОЩНИ ФУНКЦИИ --------
+// ---- 3) FORWARD GEOCODING (address -> coords) ----
+document.addEventListener('DOMContentLoaded', () => {
+  const geocodeBtn = document.getElementById('geocodeBtn');
+  if (geocodeBtn) {
+    geocodeBtn.addEventListener('click', async () => {
+      const addressInput = document.getElementById('address');
+      const address = addressInput.value.trim();
+      if (!address) {
+        alert("Въведете адрес!");
+        return;
+      }
+
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=Русе, България, ${encodeURIComponent(address)}&limit=1`;
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+
+          // Move map and marker
+          map.setView([lat, lon], 15);
+          marker.setLatLng([lat, lon]);
+
+          // Update UI
+          document.getElementById('coordsDisplay').textContent =
+            `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+          document.getElementById('addressDisplay').textContent =
+            data[0].display_name || address;
+
+        } else {
+          alert("Адресът не е намерен!");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Възникна грешка при търсене на адрес.");
+      }
+    });
+  }
+});
+
+// Bootstrap the map on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Small delay to ensure DOM is fully rendered
+  setTimeout(initMap, 100);
+});
 function setLoading(el, loading = true, loadingText = "Моля, изчакайте...") {
   if (!el) return;
   if (!el.dataset.defaultText) {
@@ -138,14 +237,16 @@ async function classifyProblem(problemText) {
 async function generateMunicipalSignal(
   problemText,
   category,
-  coordsText
+  coordsText,
+  addressText = ""
 ) {
   const system =
     "Ти пишеш кратки официални сигнали до общинска администрация на български. Тон: учтив, конкретен, без емоции.";
+  const locationInfo = addressText && addressText.trim() !== "—" ? `${addressText} (${coordsText})` : (coordsText || "неуточнена");
   const user = `Създай кратък официален сигнал (5–7 изречения) до Община Русе.
 Проблем: ${problemText}
 Категория: ${category}
-Локация: ${coordsText || "неуточнена"}
+Локация: ${locationInfo}
 Изисквания: посочи конкретен участък, очаквано действие, и добави финално благодарствено изречение.`;
 
   return await callGroqChat([
@@ -153,46 +254,36 @@ async function generateMunicipalSignal(
     { role: "user", content: user },
   ]);
 }
+
 async function generateMunicipalSignalWithReverseGeo(problemText, category, lat, lon) {
-  // Взимаме адреса от координатите с Nominatim
-  let coordsText = "неуточнена";
+  let addressText = "";
   try {
-    coordsText = await reverseGeocodeCoordinates(lat, lon);
+    addressText = await reverseGeocodeCoordinates(lat, lon);
   } catch (err) {
     console.warn("Обратното геокодиране не сработи, използва се неуточнена локация");
   }
 
-  // Генерираме сигнала с получения адрес от обратното геокодиране
-  return await generateMunicipalSignal(problemText, category, coordsText);
+  const coordsText = `${Number(lat).toFixed(5)}, ${Number(lon).toFixed(5)}`;
+  return await generateMunicipalSignal(problemText, category, coordsText, addressText);
 }
 
-// -------- ГЕОКОДИРАНЕ (АДРЕС -> КООРДИНАТИ) --------
-/*
 async function geocodeAddress(address) {
   if (!address) throw new Error("Въведете адрес или квартал");
-  const url = new URL(
-    "https://nominatim.openstreetmap.org/search"
-  );
+  const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", `Русе, България, ${address}`);
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");
 
   const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "ai-safety-assistant-demo",
-    },
+    headers: { Accept: "application/json", "User-Agent": "ai-safety-assistant-demo" },
   });
+  if (!res.ok) throw new Error("Search failed");
   const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0)
-    throw new Error(
-      "Не е намерена локация. Преместете маркера ръчно."
-    );
-
+  if (!Array.isArray(data) || data.length === 0) throw new Error("Не е намерена локация. Преместете маркера ръчно.");
   const { lat, lon } = data[0];
   return [Number(lat), Number(lon)];
 }
-*/
+
 async function reverseGeocodeCoordinates(lat, lon) {
   const url = new URL("https://nominatim.openstreetmap.org/reverse");
   url.searchParams.set("lat", lat);
@@ -220,8 +311,12 @@ async function reverseGeocodeCoordinates(lat, lon) {
 
 // -------- MAIN UI ЛОГИКА --------
 document.addEventListener("DOMContentLoaded", () => {
-  initMap();
-  showCoords(marker.getLatLng());
+  // Map is already initialized, get the marker coords
+  const coords = marker?.getLatLng();
+  if (coords) {
+    document.getElementById('coordsDisplay').textContent = 
+      `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+  }
 
   const generateBtn = document.getElementById("generateBtn");
 
@@ -251,7 +346,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const coords = await geocodeAddress(address);
       map.setView(coords, 15);
       marker.setLatLng(coords);
-      showCoords(marker.getLatLng());
+      document.getElementById('coordsDisplay').textContent = 
+        `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`;
     } catch (e) {
       console.error(e);
       showToast(e.message || String(e), "error");
@@ -264,7 +360,8 @@ document.addEventListener("DOMContentLoaded", () => {
   useCenterBtn?.addEventListener("click", () => {
     marker.setLatLng(CENTER_RUSE);
     map.setView(CENTER_RUSE, 13);
-    showCoords(marker.getLatLng());
+    document.getElementById('coordsDisplay').textContent = 
+      `${CENTER_RUSE[0].toFixed(5)}, ${CENTER_RUSE[1].toFixed(5)}`;
   });
 
   // Генериране на сигнал
@@ -303,10 +400,12 @@ document.addEventListener("DOMContentLoaded", () => {
         coordsText;
 
       // Сигнал
+      const addressText = document.getElementById("addressDisplay")?.textContent || "";
       const signalText = await generateMunicipalSignal(
         problemText,
         category,
-        coordsText
+        coordsText,
+        addressText
       );
       document.getElementById("signal").textContent =
         signalText || "Неуспешно генериране на сигнал.";
@@ -380,7 +479,8 @@ async function callGroqAgent(prompt) {
 }
 
 // Send email via backend endpoint `/api/send-email`.
-async function sendViaBackend(to, subject, text) {
+async function sendViaBackend(to, subject, text) 
+{
   const res = await fetch("/api/send-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
